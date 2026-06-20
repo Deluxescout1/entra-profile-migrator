@@ -1,0 +1,18 @@
+# Logs / backups produced at runtime (never commit machine data)
+*.log
+Backups/
+Logs/
+C:/ProgramData/EntraProfileMigrator/
+
+# Real mapping files contain client identities — only the sample is tracked
+deploy/mapping.csv
+deploy/*.real.csv
+
+# PowerShell / editor cruft
+*.psproj.user
+.vs/
+.vscode/
+*.tmp
+
+# Test artifacts
+testresults*.xml
