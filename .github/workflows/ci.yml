@@ -11,10 +11,10 @@ permissions:
 
 jobs:
   # Unit tests are fully mocked ("run anywhere" per tests/EntraProfileMigrator.Tests.ps1),
-  # so they run on Linux/pwsh too — fast and cheap. Integration/RequiresWindows tests are
-  # excluded by tag and stay VM-only.
+  # so they run on Linux/pwsh too — fast and cheap. This also proves the module loads on
+  # PowerShell 7. Integration/RequiresWindows tests are excluded by tag and stay VM-only.
   test-linux:
-    name: Unit tests (ubuntu / pwsh)
+    name: Unit tests (ubuntu / pwsh 7)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,25 +32,21 @@ jobs:
           $c.Output.Verbosity  = 'Detailed'
           Invoke-Pester -Configuration $c
 
-  # Windows gives real fidelity: proves the module loads on Windows PowerShell 5.1 (its
-  # documented minimum) and on PowerShell 7.
+  # Windows PowerShell 5.1 — the module's documented minimum. Real-fidelity check that the
+  # module loads and the mocked unit tests pass on the oldest supported runtime.
   test-windows:
-    name: Unit tests (windows / ${{ matrix.shell }})
+    name: Unit tests (windows / PowerShell 5.1)
     runs-on: windows-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        shell: [ powershell, pwsh ]
     steps:
       - uses: actions/checkout@v4
       - name: Install Pester 5
-        shell: ${{ matrix.shell }}
+        shell: powershell
         run: |
           [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
           Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
           Install-Module Pester -MinimumVersion 5.5.0 -Force -SkipPublisherCheck -Scope CurrentUser
       - name: Run unit tests
-        shell: ${{ matrix.shell }}
+        shell: powershell
         run: |
           Import-Module Pester -MinimumVersion 5.5.0 -Force
           $c = New-PesterConfiguration
