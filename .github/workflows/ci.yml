@@ -4,46 +4,58 @@ on:
   push:
     branches: [ main ]
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  test:
-    name: Unit tests (${{ matrix.shell }})
+  # Unit tests are fully mocked ("run anywhere" per tests/EntraProfileMigrator.Tests.ps1),
+  # so they run on Linux/pwsh too — fast and cheap. Integration/RequiresWindows tests are
+  # excluded by tag and stay VM-only.
+  test-linux:
+    name: Unit tests (ubuntu / pwsh)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Pester 5
+        shell: pwsh
+        run: Install-Module Pester -MinimumVersion 5.5.0 -Force -SkipPublisherCheck -Scope CurrentUser
+      - name: Run unit tests
+        shell: pwsh
+        run: |
+          Import-Module Pester -MinimumVersion 5.5.0 -Force
+          $c = New-PesterConfiguration
+          $c.Run.Path          = 'tests'
+          $c.Run.Exit          = $true
+          $c.Filter.ExcludeTag = 'Integration', 'RequiresWindows'
+          $c.Output.Verbosity  = 'Detailed'
+          Invoke-Pester -Configuration $c
+
+  # Windows gives real fidelity: proves the module loads on Windows PowerShell 5.1 (its
+  # documented minimum) and on PowerShell 7.
+  test-windows:
+    name: Unit tests (windows / ${{ matrix.shell }})
     runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
-        # powershell = Windows PowerShell 5.1 (the module's documented minimum)
-        # pwsh       = PowerShell 7+
         shell: [ powershell, pwsh ]
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
       - name: Install Pester 5
         shell: ${{ matrix.shell }}
         run: |
           [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
           Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
           Install-Module Pester -MinimumVersion 5.5.0 -Force -SkipPublisherCheck -Scope CurrentUser
-
-      - name: Run unit tests (Integration/RequiresWindows excluded)
+      - name: Run unit tests
         shell: ${{ matrix.shell }}
         run: |
           Import-Module Pester -MinimumVersion 5.5.0 -Force
-          $config = New-PesterConfiguration
-          $config.Run.Path             = 'tests'
-          $config.Run.Exit             = $true     # non-zero exit fails the job
-          $config.Filter.ExcludeTag    = 'Integration', 'RequiresWindows'
-          $config.Output.Verbosity     = 'Detailed'
-          $config.TestResult.Enabled   = $true
-          $config.TestResult.OutputPath = 'testresults.xml'
-          Invoke-Pester -Configuration $config
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: pester-results-${{ matrix.shell }}
-          path: testresults.xml
-          if-no-files-found: warn
+          $c = New-PesterConfiguration
+          $c.Run.Path          = 'tests'
+          $c.Run.Exit          = $true
+          $c.Filter.ExcludeTag = 'Integration', 'RequiresWindows'
+          $c.Output.Verbosity  = 'Detailed'
+          Invoke-Pester -Configuration $c
