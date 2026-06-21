@@ -18,5 +18,8 @@ Export-ModuleMember -Function $public.BaseName
 # Shared module-scoped constants
 $script:ProfileListPath = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList'
 $script:ModuleRoot      = 'C:\ProgramData\EntraProfileMigrator'
-$script:LogRoot         = Join-Path $script:ModuleRoot 'Logs'
-$script:BackupRoot      = Join-Path $script:ModuleRoot 'Backups'
+# Plain string composition (not Join-Path): these are Windows runtime paths, and
+# Join-Path resolves the 'C:' PSDrive at import — which throws on non-Windows hosts
+# where the mocked unit tests run.
+$script:LogRoot         = "$script:ModuleRoot\Logs"
+$script:BackupRoot      = "$script:ModuleRoot\Backups"

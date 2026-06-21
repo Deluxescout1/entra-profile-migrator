@@ -151,7 +151,7 @@ function Update-ProfileListMapping {
     [pscustomobject]@{
         NewSid           = $NewSid
         OldSid           = $OldSid
-        Mode             = if ($newExists) { 'Repoint' } else { 'Provision' }
+        Mode             = $(if ($newExists) { 'Repoint' } else { 'Provision' })
         ProfileImagePath = $targetPath
         ThrowawayRetired = $retiredPath
         OldEntryRemoved  = $oldRemoved

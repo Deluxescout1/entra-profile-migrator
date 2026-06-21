@@ -63,7 +63,7 @@ function Get-ProfileListEntry {
             Classification   = $classification
             IsLoaded         = $isLoaded
             RawState         = $props.State
-            FolderExists     = if ($imagePath) { Test-Path $imagePath } else { $false }
+            FolderExists     = $(if ($imagePath) { Test-Path $imagePath } else { $false })
         }
     }
 }

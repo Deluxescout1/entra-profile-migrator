@@ -168,14 +168,14 @@ function Get-MigrationCandidate {
 
         $candidates.Add([pscustomobject]@{
             SourceSid       = $src.Sid
-            SourceAccount   = if ($src.Account) { $src.Account } else { "(unresolved — domain gone)" }
+            SourceAccount   = $(if ($src.Account) { $src.Account } else { "(unresolved — domain gone)" })
             SourcePath      = $src.ProfileImagePath
             SourceLoaded    = $src.IsLoaded
             AlreadyMigrated = $src.AlreadyMigrated
-            TargetSid       = if ($entraMatch) { $entraMatch.Sid }            else { $null }
+            TargetSid       = $(if ($entraMatch) { $entraMatch.Sid }            else { $null })
             TargetUpn       = $targetUpn
-            TargetPath      = if ($entraMatch) { $entraMatch.ProfileImagePath } else { $null }
-            TargetLoaded    = if ($entraMatch) { $entraMatch.IsLoaded }         else { $null }
+            TargetPath      = $(if ($entraMatch) { $entraMatch.ProfileImagePath } else { $null })
+            TargetLoaded    = $(if ($entraMatch) { $entraMatch.IsLoaded }         else { $null })
             MatchConfidence = $confidence
             MatchReason     = $matchReason
             ReadyToMigrate  = ($blocking.Count -eq 0)
