@@ -20,7 +20,7 @@ jobs:
     name: Unit tests (Windows PowerShell 5.1)
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install Pester 5
         shell: powershell
         run: |
@@ -42,7 +42,7 @@ jobs:
     name: Unit tests (PowerShell 7)
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install Pester 5
         shell: pwsh
         run: |

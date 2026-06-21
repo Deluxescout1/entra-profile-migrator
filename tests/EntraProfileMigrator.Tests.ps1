@@ -95,6 +95,69 @@ Describe 'Resolve-TargetSid' {
 }
 
 # ---------------------------------------------------------------------------
+Describe 'Get-ProfileListEntry' {
+    BeforeAll {
+        Mock -ModuleName EntraProfileMigrator Write-MigrationLog { }
+        Mock -ModuleName EntraProfileMigrator Get-ChildItem {
+            $base = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList'
+            @(
+                [pscustomobject]@{ PSChildName = 'S-1-5-18';                PSPath = "$base\S-1-5-18" }
+                [pscustomobject]@{ PSChildName = 'S-1-5-21-1-2-3-1001';     PSPath = "$base\S-1-5-21-1-2-3-1001" }
+                [pscustomobject]@{ PSChildName = 'S-1-5-21-1-2-3-1001.bak'; PSPath = "$base\S-1-5-21-1-2-3-1001.bak" }
+            )
+        }
+        Mock -ModuleName EntraProfileMigrator Get-ItemProperty {
+            $leaf = ($Path -split '\\')[-1]
+            if ($leaf -eq 'S-1-5-18') {
+                [pscustomobject]@{ ProfileImagePath = 'C:\Windows\system32\config\systemprofile'; State = 0 }
+            } else {
+                [pscustomobject]@{ ProfileImagePath = 'C:\Users\jsmith'; State = 0 }
+            }
+        }
+        # Default: nothing loaded, no folders present. Individual tests override as needed.
+        Mock -ModuleName EntraProfileMigrator Test-Path { $false }
+    }
+
+    It 'skips .bak shadow keys and warns about them' {
+        $sids = InModuleScope EntraProfileMigrator { (Get-ProfileListEntry).Sid }
+        $sids | Should -Not -Contain 'S-1-5-21-1-2-3-1001.bak'
+        Should -Invoke Write-MigrationLog -ModuleName EntraProfileMigrator `
+            -ParameterFilter { $Level -eq 'WARN' -and $Message -like '*.bak*' }
+    }
+
+    It 'classifies well-known SIDs (S-1-5-18) as System' {
+        $c = InModuleScope EntraProfileMigrator {
+            (Get-ProfileListEntry | Where-Object Sid -eq 'S-1-5-18').Classification
+        }
+        $c | Should -Be 'System'
+    }
+
+    It 'classifies an unresolved S-1-5-21 SID as Domain with a null account' {
+        $d = InModuleScope EntraProfileMigrator {
+            Get-ProfileListEntry | Where-Object Sid -eq 'S-1-5-21-1-2-3-1001'
+        }
+        $d.Classification | Should -Be 'Domain'
+        $d.Account        | Should -BeNullOrEmpty
+    }
+
+    It 'reports IsLoaded = $true when the hive is mounted under HKEY_USERS' {
+        Mock -ModuleName EntraProfileMigrator Test-Path { $Path -like '*HKEY_USERS\S-1-5-21-1-2-3-1001' }
+        $loaded = InModuleScope EntraProfileMigrator {
+            (Get-ProfileListEntry | Where-Object Sid -eq 'S-1-5-21-1-2-3-1001').IsLoaded
+        }
+        $loaded | Should -BeTrue
+    }
+
+    It 'reports FolderExists from the profile path on disk' {
+        Mock -ModuleName EntraProfileMigrator Test-Path { $Path -eq 'C:\Users\jsmith' }
+        $exists = InModuleScope EntraProfileMigrator {
+            (Get-ProfileListEntry | Where-Object Sid -eq 'S-1-5-21-1-2-3-1001').FolderExists
+        }
+        $exists | Should -BeTrue
+    }
+}
+
+# ---------------------------------------------------------------------------
 Describe 'Get-MigratableProfile' {
     BeforeAll {
         Mock -ModuleName EntraProfileMigrator Write-MigrationLog { }
@@ -271,6 +334,45 @@ Describe 'Update-ProfileListMapping' {
         }
         Should -Invoke Set-ItemProperty -ModuleName EntraProfileMigrator -Times 0
         Should -Invoke New-Item         -ModuleName EntraProfileMigrator -Times 0
+    }
+}
+
+# ---------------------------------------------------------------------------
+Describe 'Test-MigrationPrerequisite' {
+    BeforeAll {
+        Mock -ModuleName EntraProfileMigrator Write-MigrationLog { }
+    }
+
+    It 'passes the SID/source checks when the target resolves, is logged off, and a domain source exists' {
+        Mock -ModuleName EntraProfileMigrator Resolve-TargetSid {
+            New-FakeProfile 'S-1-12-1-1' 'AzureAD\jsmith@contoso.com' 'C:\Users\jsmith.CONTOSO' 'AzureAD'
+        }
+        Mock -ModuleName EntraProfileMigrator Get-ProfileListEntry {
+            @( New-FakeProfile 'S-1-5-21-1-2-3-1001' 'DOMAIN\jsmith' 'C:\Users\jsmith' 'Domain' )
+        }
+        $r = Test-MigrationPrerequisite -TargetUpn 'jsmith@contoso.com'
+        ($r.Checks | Where-Object Check -eq 'TargetSidMinted').Pass    | Should -BeTrue
+        ($r.Checks | Where-Object Check -eq 'TargetLoggedOff').Pass    | Should -BeTrue
+        ($r.Checks | Where-Object Check -eq 'SourceProfileFound').Pass | Should -BeTrue
+    }
+
+    It 'fails TargetSidMinted (and AllPassed) when the user has not signed in yet' {
+        Mock -ModuleName EntraProfileMigrator Resolve-TargetSid { $null }
+        Mock -ModuleName EntraProfileMigrator Get-ProfileListEntry {
+            @( New-FakeProfile 'S-1-5-21-1-2-3-1001' 'DOMAIN\jsmith' 'C:\Users\jsmith' 'Domain' )
+        }
+        $r = Test-MigrationPrerequisite -TargetUpn 'jsmith@contoso.com'
+        ($r.Checks | Where-Object Check -eq 'TargetSidMinted').Pass | Should -BeFalse
+        $r.AllPassed | Should -BeFalse
+    }
+
+    It 'fails TargetLoggedOff when the target hive is already loaded' {
+        Mock -ModuleName EntraProfileMigrator Resolve-TargetSid {
+            New-FakeProfile 'S-1-12-1-1' 'AzureAD\jsmith@contoso.com' 'C:\Users\jsmith.CONTOSO' 'AzureAD' -IsLoaded
+        }
+        Mock -ModuleName EntraProfileMigrator Get-ProfileListEntry { @() }
+        $r = Test-MigrationPrerequisite -TargetUpn 'jsmith@contoso.com'
+        ($r.Checks | Where-Object Check -eq 'TargetLoggedOff').Pass | Should -BeFalse
     }
 }
 
