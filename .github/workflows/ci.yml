@@ -9,33 +9,15 @@ on:
 permissions:
   contents: read
 
-jobs:
-  # Unit tests are fully mocked ("run anywhere" per tests/EntraProfileMigrator.Tests.ps1),
-  # so they run on Linux/pwsh too — fast and cheap. This also proves the module loads on
-  # PowerShell 7. Integration/RequiresWindows tests are excluded by tag and stay VM-only.
-  test-linux:
-    name: Unit tests (ubuntu / pwsh 7)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Pester 5
-        shell: pwsh
-        run: Install-Module Pester -MinimumVersion 5.5.0 -Force -SkipPublisherCheck -Scope CurrentUser
-      - name: Run unit tests
-        shell: pwsh
-        run: |
-          Import-Module Pester -MinimumVersion 5.5.0 -Force
-          $c = New-PesterConfiguration
-          $c.Run.Path          = 'tests'
-          $c.Run.Exit          = $true
-          $c.Filter.ExcludeTag = 'Integration', 'RequiresWindows'
-          $c.Output.Verbosity  = 'Detailed'
-          Invoke-Pester -Configuration $c
+# This module is Windows-only and its unit tests mock Windows binaries (reg.exe,
+# icacls.exe) and use C:\ paths, so they require a Windows host (but never mutate
+# anything — Integration/RequiresWindows tests are excluded by tag and stay VM-only).
+# We run on both PowerShell editions: Windows PowerShell 5.1 (the documented
+# minimum) and PowerShell 7.
 
-  # Windows PowerShell 5.1 — the module's documented minimum. Real-fidelity check that the
-  # module loads and the mocked unit tests pass on the oldest supported runtime.
-  test-windows:
-    name: Unit tests (windows / PowerShell 5.1)
+jobs:
+  test-ps51:
+    name: Unit tests (Windows PowerShell 5.1)
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -47,6 +29,27 @@ jobs:
           Install-Module Pester -MinimumVersion 5.5.0 -Force -SkipPublisherCheck -Scope CurrentUser
       - name: Run unit tests
         shell: powershell
+        run: |
+          Import-Module Pester -MinimumVersion 5.5.0 -Force
+          $c = New-PesterConfiguration
+          $c.Run.Path          = 'tests'
+          $c.Run.Exit          = $true
+          $c.Filter.ExcludeTag = 'Integration', 'RequiresWindows'
+          $c.Output.Verbosity  = 'Detailed'
+          Invoke-Pester -Configuration $c
+
+  test-ps7:
+    name: Unit tests (PowerShell 7)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Pester 5
+        shell: pwsh
+        run: |
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+          Install-Module Pester -MinimumVersion 5.5.0 -Force -SkipPublisherCheck -Scope CurrentUser
+      - name: Run unit tests
+        shell: pwsh
         run: |
           Import-Module Pester -MinimumVersion 5.5.0 -Force
           $c = New-PesterConfiguration

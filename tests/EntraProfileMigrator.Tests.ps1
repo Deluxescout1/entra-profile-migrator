@@ -1,7 +1,9 @@
 <#
     EntraProfileMigrator.Tests.ps1  —  Pester v5
 
-    Unit tests:  run anywhere (PowerShell 5.1+ / 7+). Mock all Windows APIs.
+    Unit tests:  Windows PowerShell 5.1+ / 7+. They mock Windows APIs and binaries
+                 (reg.exe, icacls.exe) and use C:\ paths, so they need a Windows host
+                 but perform no real mutation. CI runs them on 5.1 and 7.
     Integration: tagged RequiresWindows. Run on a snapshotted Win11 VM only.
                  These tests mutate the registry and filesystem — VM snapshot is the rollback.
 #>
