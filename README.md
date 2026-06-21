@@ -1,5 +1,7 @@
 # EntraProfileMigrator
 
+[![CI](https://github.com/Deluxescout1/entra-profile-migrator/actions/workflows/ci.yml/badge.svg)](https://github.com/Deluxescout1/entra-profile-migrator/actions/workflows/ci.yml)
+
 In-house replacement for ForensiT User Profile Wizard, scoped to **on-prem AD (domain-joined) →
 Entra ID (cloud-only) joined** profile migrations. PowerShell module, deployable via NinjaOne /
 Rewst. After migration the user signs in with their Microsoft account and lands in their existing
