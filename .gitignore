@@ -16,3 +16,6 @@ deploy/*.real.csv
 
 # Test artifacts
 testresults*.xml
+
+# Build output (the .exe is built locally by tools/Build-Exe.ps1, never committed)
+dist/

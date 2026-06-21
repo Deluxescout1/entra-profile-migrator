@@ -65,6 +65,15 @@ cleans up — dry-run by default:
 For RMM, use `deploy\NinjaOne-Run-Migration.ps1` (reads parameters from NinjaOne variables). The
 orchestrator runs fully non-interactive (no prompts) so it is safe under SYSTEM/Rewst/NinjaOne.
 
+### Want a single .exe?
+There is no prebuilt `.exe` (this tool is PowerShell, and an `.exe` can only be produced on
+Windows). To build one yourself, run once on a Windows PC:
+```powershell
+.\tools\Build-Exe.ps1     # -> dist\EntraProfileMigrator.exe (double-click; prompts for admin)
+```
+That inlines the whole module into one file and compiles it with PS2EXE. Or skip the build and
+just double-click **`Run-EntraMigrator-GUI.cmd`**, which launches the same GUI without compiling.
+
 ## Testing the mutation mechanics on a local PC
 The risky machinery (re-ACL, hive rewrite, `ProfileList` repoint, **and rollback**) is SID-agnostic,
 so you can prove it on a throwaway Windows box using two **disposable local accounts** as stand-ins
