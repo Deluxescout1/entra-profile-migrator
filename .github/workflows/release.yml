@@ -1,0 +1,63 @@
+name: Release
+
+on:
+  push:
+    tags: [ 'v*' ]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Version tag to release, e.g. v0.1.0'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build EXE and publish release
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Unit tests (must pass before shipping)
+        shell: pwsh
+        run: |
+          Install-Module Pester -MinimumVersion 5.5.0 -Force -SkipPublisherCheck -Scope CurrentUser
+          Import-Module Pester -MinimumVersion 5.5.0 -Force
+          $c = New-PesterConfiguration
+          $c.Run.Path          = 'tests'
+          $c.Run.Exit          = $true
+          $c.Filter.ExcludeTag = 'Integration', 'RequiresWindows'
+          $c.Output.Verbosity  = 'Detailed'
+          Invoke-Pester -Configuration $c
+
+      - name: Build EntraProfileMigrator.exe
+        shell: powershell
+        run: |
+          .\tools\Build-Exe.ps1
+          if (-not (Test-Path .\dist\EntraProfileMigrator.exe)) { Write-Error 'EXE was not produced'; exit 1 }
+
+      - name: Compute SHA256
+        shell: pwsh
+        run: |
+          $h = (Get-FileHash .\dist\EntraProfileMigrator.exe -Algorithm SHA256).Hash
+          "$h  EntraProfileMigrator.exe" | Set-Content .\dist\EntraProfileMigrator.exe.sha256
+          Write-Host "SHA256: $h"
+
+      - name: Publish GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ($env:GITHUB_REF_TYPE -eq 'tag') { $tag = $env:GITHUB_REF_NAME } else { $tag = '${{ github.event.inputs.tag }}' }
+          Write-Host "Releasing $tag"
+          $notes = "Automated build of the EntraProfileMigrator GUI executable. " +
+                   "Verify the SHA256 sidecar before running. This tool re-permissions Windows " +
+                   "profiles and rewrites ProfileList - TEST IN A VM FIRST. Run elevated; run as " +
+                   "SYSTEM (PsExec -i -s) to migrate."
+          gh release create $tag `
+            dist/EntraProfileMigrator.exe `
+            dist/EntraProfileMigrator.exe.sha256 `
+            --title "EntraProfileMigrator $tag" `
+            --notes $notes `
+            --target $env:GITHUB_SHA

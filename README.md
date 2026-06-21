@@ -74,6 +74,11 @@ Windows). To build one yourself, run once on a Windows PC:
 That inlines the whole module into one file and compiles it with PS2EXE. Or skip the build and
 just double-click **`Run-EntraMigrator-GUI.cmd`**, which launches the same GUI without compiling.
 
+**Prebuilt download:** every version tag publishes the compiled `.exe` (plus a SHA256) to the
+[Releases page](https://github.com/Deluxescout1/entra-profile-migrator/releases) via CI. To cut a
+release, push a tag (`git tag v0.1.0; git push origin v0.1.0`) or run the **Release** workflow from
+the Actions tab. Always verify the SHA256, and test in a VM before using on a real machine.
+
 ## Testing the mutation mechanics on a local PC
 The risky machinery (re-ACL, hive rewrite, `ProfileList` repoint, **and rollback**) is SID-agnostic,
 so you can prove it on a throwaway Windows box using two **disposable local accounts** as stand-ins
