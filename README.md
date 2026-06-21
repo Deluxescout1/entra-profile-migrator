@@ -40,6 +40,44 @@ Invoke-ProfileMigration -TargetUpn jsmith@contoso.com -Execute
 Restore-MigrationBackup -BackupPath 'C:\ProgramData\EntraProfileMigrator\Backups\<timestamp>'
 ```
 
+## Testing the mutation mechanics on a local PC
+The risky machinery (re-ACL, hive rewrite, `ProfileList` repoint, **and rollback**) is SID-agnostic,
+so you can prove it on a throwaway Windows box using two **disposable local accounts** as stand-ins
+for the old (domain) and new (Entra) SIDs — no domain or Entra join required. This does **not** cover
+Domain/AzureAD classification, the `dsregcmd` join gate, or target-SID discovery (those need a real
+domain profile + an Entra-joined device).
+
+```powershell
+# 1. Get the code
+git clone https://github.com/Deluxescout1/entra-profile-migrator.git
+cd entra-profile-migrator
+#    (downloaded a ZIP instead? unblock it first:)
+#    Get-ChildItem -Recurse -Include *.ps1,*.psm1,*.psd1 | Unblock-File
+
+# 2. Elevated PowerShell, allow scripts for this session only
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+
+# 3. Read-only sanity check (zero risk)
+Import-Module .\src\EntraProfileMigrator\EntraProfileMigrator.psd1 -Force
+Get-MigratableProfile | Format-Table Classification, Account, Sid, ProfileImagePath, IsLoaded
+
+# 4. Make two throwaway accounts, then SIGN IN to each once (Switch user) to mint
+#    their profiles, drop junk files in oldie's Desktop, and sign back out.
+net user oldie  P@ssw0rd! /add
+net user newbie P@ssw0rd! /add
+
+# 5. Dry run — shows the plan, changes nothing
+.\tools\LocalMechanicsTest.ps1 -SourceAccount oldie -TargetAccount newbie
+
+# 6. Real run — migrate, verify, then automatically roll back (type MIGRATE to confirm)
+.\tools\LocalMechanicsTest.ps1 -SourceAccount oldie -TargetAccount newbie -Execute
+```
+
+Run this as a *third* admin account (not `oldie`/`newbie`). It refuses any profile that isn't a
+disposable local account, is logged on, or is the account running it. Automated mocked tests run
+separately in CI on every push (see the badge above); `LocalMechanicsTest.ps1` is always manual
+because it mutates a real machine.
+
 ## Status
 Early scaffold. Read-only path (enumerate/classify/resolve/preflight) is implemented; mutating
 functions have the correct mechanics in place with hardening TODOs marked inline and in
