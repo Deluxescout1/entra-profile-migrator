@@ -1,4 +1,4 @@
-function Resolve-TargetSid {
+﻿function Resolve-TargetSid {
     <#
     .SYNOPSIS
         Finds the local SID that Windows minted for an Entra user after their first sign-in.

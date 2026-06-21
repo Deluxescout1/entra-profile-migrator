@@ -1,4 +1,4 @@
-function Get-ProfileListEntry {
+﻿function Get-ProfileListEntry {
     <#
     .SYNOPSIS
         Reads every entry under the ProfileList registry key and classifies it.

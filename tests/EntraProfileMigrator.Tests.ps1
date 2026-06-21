@@ -1,4 +1,4 @@
-<#
+﻿<#
     EntraProfileMigrator.Tests.ps1  —  Pester v5
 
     Unit tests:  Windows PowerShell 5.1+ / 7+. They mock Windows APIs and binaries

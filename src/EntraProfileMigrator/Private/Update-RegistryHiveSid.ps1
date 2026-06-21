@@ -1,4 +1,4 @@
-function Invoke-HiveAclSubstitution {
+﻿function Invoke-HiveAclSubstitution {
     # Recursive helper: walks a mounted registry key tree and substitutes OldSid with NewSid
     # in every ACE and owner field. Returns the number of keys whose security was modified.
     [CmdletBinding()]

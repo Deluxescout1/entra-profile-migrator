@@ -1,4 +1,4 @@
-function Update-ProfileListMapping {
+﻿function Update-ProfileListMapping {
     <#
     .SYNOPSIS
         Maps the new (Entra) SID's ProfileList entry to the existing profile folder.

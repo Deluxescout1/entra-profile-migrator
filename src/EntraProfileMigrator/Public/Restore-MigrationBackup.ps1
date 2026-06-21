@@ -1,4 +1,4 @@
-function Restore-MigrationBackup {
+﻿function Restore-MigrationBackup {
     <#
     .SYNOPSIS
         Rolls a migration back using the artifacts written by New-MigrationBackup and

@@ -1,4 +1,4 @@
-<#
+﻿<#
     NinjaOne-Run-Migration.ps1
     Runs EntraProfileMigrator under SYSTEM via a NinjaOne script policy.
 

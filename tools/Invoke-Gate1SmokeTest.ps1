@@ -1,4 +1,4 @@
-<#
+﻿<#
   Invoke-Gate1SmokeTest.ps1
   Gate 1 pre-flight: verify the five private functions load and bind, then confirm
   -WhatIf describes the right actions without touching anything. Run this on the

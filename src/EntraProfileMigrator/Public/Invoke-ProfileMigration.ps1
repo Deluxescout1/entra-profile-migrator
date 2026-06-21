@@ -1,4 +1,4 @@
-function Invoke-ProfileMigration {
+﻿function Invoke-ProfileMigration {
     <#
     .SYNOPSIS
         Migrates a domain profile to an Entra (cloud-only) identity on this device.

@@ -1,0 +1,12 @@
+root = true
+
+# Windows PowerShell 5.1 reads .ps1/.psm1/.psd1 files WITHOUT a BOM as ANSI
+# (Windows-1252), not UTF-8. Any non-ASCII character (e.g. an em-dash) then corrupts
+# the parser. Save these files as UTF-8 *with BOM* so both Windows PowerShell 5.1 and
+# PowerShell 7 read them correctly.
+[*.{ps1,psm1,psd1}]
+charset = utf-8-bom
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+insert_final_newline = true

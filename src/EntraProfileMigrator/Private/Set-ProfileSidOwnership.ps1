@@ -1,4 +1,4 @@
-function Set-ProfileSidOwnership {
+﻿function Set-ProfileSidOwnership {
     <#
     .SYNOPSIS
         Re-permissions an entire user profile tree from an old SID to a new SID.

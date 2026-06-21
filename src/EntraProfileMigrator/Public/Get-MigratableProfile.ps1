@@ -1,4 +1,4 @@
-function Get-MigratableProfile {
+﻿function Get-MigratableProfile {
     <#
     .SYNOPSIS
         Lists user profiles on this device, classified for migration. READ-ONLY.

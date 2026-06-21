@@ -1,4 +1,4 @@
-function Test-MigrationPrerequisite {
+﻿function Test-MigrationPrerequisite {
     <#
     .SYNOPSIS
         Preflight checks for a migration. READ-ONLY. Returns a result object; does not change

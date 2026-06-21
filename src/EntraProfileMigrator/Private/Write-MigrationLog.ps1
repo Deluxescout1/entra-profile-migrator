@@ -1,4 +1,4 @@
-function Write-MigrationLog {
+﻿function Write-MigrationLog {
     <#
     .SYNOPSIS
         Writes a timestamped line to the console and the migration log file.

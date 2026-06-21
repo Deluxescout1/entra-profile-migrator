@@ -1,4 +1,4 @@
-function New-MigrationBackup {
+﻿function New-MigrationBackup {
     <#
     .SYNOPSIS
         Captures everything needed to roll a migration back. Run BEFORE any mutation.

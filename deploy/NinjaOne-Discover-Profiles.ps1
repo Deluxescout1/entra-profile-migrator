@@ -1,4 +1,4 @@
-<#
+﻿<#
     NinjaOne-Discover-Profiles.ps1
 
     Runs Get-MigrationCandidate on the device and writes a structured JSON report plus a

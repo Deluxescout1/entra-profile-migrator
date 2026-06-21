@@ -1,4 +1,4 @@
-<#
+﻿<#
   Compare-ProfileSurface.ps1 - capture what a profile-migration tool changes, so you
   can diff Profwiz's surface against your own functions' surface and catch anything
   you're missing BEFORE the pilot.

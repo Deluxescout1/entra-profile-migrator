@@ -1,4 +1,4 @@
-function Get-MigrationCandidate {
+﻿function Get-MigrationCandidate {
     <#
     .SYNOPSIS
         Discovers user profiles on this device and proposes domain-to-Entra migration pairings.

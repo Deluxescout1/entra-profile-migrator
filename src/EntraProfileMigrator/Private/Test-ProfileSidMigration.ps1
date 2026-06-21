@@ -1,4 +1,4 @@
-function Test-ProfileSidMigration {
+﻿function Test-ProfileSidMigration {
     <#
     .SYNOPSIS
         Reports any files/folders under a profile whose ACL still references a SID.
