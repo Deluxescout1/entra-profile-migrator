@@ -27,6 +27,22 @@ jobs:
           [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
           Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
           Install-Module Pester -MinimumVersion 5.5.0 -Force -SkipPublisherCheck -Scope CurrentUser
+      - name: Syntax check (parse all scripts)
+        shell: powershell
+        run: |
+          $failed = $false
+          Get-ChildItem -Path src, tools, deploy, tests -Recurse -Include *.ps1, *.psm1, *.psd1 | ForEach-Object {
+            $t = $null; $e = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$t, [ref]$e)
+            if ($e -and $e.Count) {
+              $failed = $true
+              Write-Host "PARSE ERRORS: $($_.FullName)"
+              $e | ForEach-Object { Write-Host ("  line {0}: {1}" -f $_.Extent.StartLineNumber, $_.Message) }
+            } else {
+              Write-Host "ok  $($_.FullName)"
+            }
+          }
+          if ($failed) { exit 1 }
       - name: Run unit tests
         shell: powershell
         run: |
@@ -48,6 +64,22 @@ jobs:
         run: |
           Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
           Install-Module Pester -MinimumVersion 5.5.0 -Force -SkipPublisherCheck -Scope CurrentUser
+      - name: Syntax check (parse all scripts)
+        shell: pwsh
+        run: |
+          $failed = $false
+          Get-ChildItem -Path src, tools, deploy, tests -Recurse -Include *.ps1, *.psm1, *.psd1 | ForEach-Object {
+            $t = $null; $e = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$t, [ref]$e)
+            if ($e -and $e.Count) {
+              $failed = $true
+              Write-Host "PARSE ERRORS: $($_.FullName)"
+              $e | ForEach-Object { Write-Host ("  line {0}: {1}" -f $_.Extent.StartLineNumber, $_.Message) }
+            } else {
+              Write-Host "ok  $($_.FullName)"
+            }
+          }
+          if ($failed) { exit 1 }
       - name: Run unit tests
         shell: pwsh
         run: |
