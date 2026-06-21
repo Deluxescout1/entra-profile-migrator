@@ -36,6 +36,7 @@ Describe 'Module surface' {
         'Test-MigrationPrerequisite' | Should -BeIn $exported
         'Invoke-ProfileMigration'  | Should -BeIn $exported
         'Restore-MigrationBackup'  | Should -BeIn $exported
+        'Show-EntraMigrationGui'   | Should -BeIn $exported
     }
 }
 
@@ -138,6 +139,19 @@ Describe 'Get-ProfileListEntry' {
         }
         $d.Classification | Should -Be 'Domain'
         $d.Account        | Should -BeNullOrEmpty
+    }
+
+    It 'classifies an Entra (S-1-12-1) SID as AzureAD even when translation fails' {
+        # Regression guard: Entra SIDs are S-1-12-1 (not S-1-5-21). They must NOT fall through
+        # to the "non-user authority => System" branch, or the tool can never find a target.
+        Mock -ModuleName EntraProfileMigrator Get-ChildItem {
+            $base = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList'
+            @( [pscustomobject]@{ PSChildName = 'S-1-12-1-111-222-333-444'; PSPath = "$base\S-1-12-1-111-222-333-444" } )
+        }
+        $cls = InModuleScope EntraProfileMigrator {
+            (Get-ProfileListEntry | Where-Object Sid -eq 'S-1-12-1-111-222-333-444').Classification
+        }
+        $cls | Should -Be 'AzureAD'
     }
 
     It 'reports IsLoaded = $true when the hive is mounted under HKEY_USERS' {

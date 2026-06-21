@@ -40,6 +40,31 @@ Invoke-ProfileMigration -TargetUpn jsmith@contoso.com -Execute
 Restore-MigrationBackup -BackupPath 'C:\ProgramData\EntraProfileMigrator\Backups\<timestamp>'
 ```
 
+## Three ways to run it (same core)
+All three drive the same `Invoke-ProfileMigration` engine — pick whichever fits.
+
+**1. PowerShell (interactive / CLI).** Elevated console, as in Quick start above.
+
+**2. GUI (pick profiles manually).** A WinForms front-end that lists every profile, lets you
+select the target (Entra) and optional source (domain), and Preflight / Dry Run / Migrate / Roll
+Back — read-only until you confirm a migration.
+```powershell
+Import-Module .\src\EntraProfileMigrator\EntraProfileMigrator.psd1 -Force
+Show-EntraMigrationGui
+# or just run the launcher (handles the STA requirement for you):
+.\tools\EntraProfileMigrator-GUI.ps1
+```
+
+**3. Background, as SYSTEM (no RMM).** Re-ACLing another user's hive needs SYSTEM and the target
+logged off. This registers a transient SYSTEM scheduled task, runs the migration, waits, and
+cleans up — dry-run by default:
+```powershell
+.\deploy\Start-MigrationAsSystem.ps1 -TargetUpn jsmith@contoso.com            # dry run
+.\deploy\Start-MigrationAsSystem.ps1 -TargetUpn jsmith@contoso.com -Execute   # migrate
+```
+For RMM, use `deploy\NinjaOne-Run-Migration.ps1` (reads parameters from NinjaOne variables). The
+orchestrator runs fully non-interactive (no prompts) so it is safe under SYSTEM/Rewst/NinjaOne.
+
 ## Testing the mutation mechanics on a local PC
 The risky machinery (re-ACL, hive rewrite, `ProfileList` repoint, **and rollback**) is SID-agnostic,
 so you can prove it on a throwaway Windows box using two **disposable local accounts** as stand-ins

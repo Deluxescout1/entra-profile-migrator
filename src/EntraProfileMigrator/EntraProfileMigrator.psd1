@@ -13,7 +13,8 @@
         'Get-MigrationCandidate',
         'Test-MigrationPrerequisite',
         'Invoke-ProfileMigration',
-        'Restore-MigrationBackup'
+        'Restore-MigrationBackup',
+        'Show-EntraMigrationGui'
     )
     CmdletsToExport   = @()
     VariablesToExport = @()

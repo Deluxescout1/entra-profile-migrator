@@ -91,16 +91,19 @@ PLAN
     }
 
     # --- Execute ---
+    # -Confirm:$false on every mutating call: -Execute is already the operator's confirmation,
+    # and the sub-functions are ConfirmImpact='High'. Without this they would try to prompt when
+    # run unattended (SYSTEM via RMM / scheduled task), where there is no console to answer.
     $backupDir = $null
     try {
         $backupDir = New-MigrationBackup -SourceSid $source.Sid -TargetSid $target.Sid `
-                        -SourcePath $sourcePath -ThrowawayPath $throwawayPath -Mode $Mode
+                        -SourcePath $sourcePath -ThrowawayPath $throwawayPath -Mode $Mode -Confirm:$false
         $savedAcl = Join-Path $backupDir 'fs-acl.txt'
 
         Set-ProfileSidOwnership -ProfilePath $sourcePath -OldSid $source.Sid -NewSid $target.Sid `
-                        -AclBackupPath $savedAcl -Copy:($Mode -eq 'copy')
-        Update-RegistryHiveSid    -ProfilePath $sourcePath -OldSid $source.Sid -NewSid $target.Sid
-        Update-ProfileListMapping -OldSid $source.Sid -NewSid $target.Sid -ProfilePath $sourcePath -BackupDir $backupDir
+                        -AclBackupPath $savedAcl -Copy:($Mode -eq 'copy') -Confirm:$false
+        Update-RegistryHiveSid    -ProfilePath $sourcePath -OldSid $source.Sid -NewSid $target.Sid -Confirm:$false
+        Update-ProfileListMapping -OldSid $source.Sid -NewSid $target.Sid -ProfilePath $sourcePath -BackupDir $backupDir -Confirm:$false
 
         # Idempotency marker.
         Set-Content -Path (Join-Path $sourcePath '.epm-migrated') `
@@ -114,7 +117,7 @@ PLAN
         if ($backupDir) {
             try {
                 Write-MigrationLog "Attempting automatic rollback from $backupDir" -Level WARN
-                Restore-MigrationBackup -BackupPath $backupDir -ErrorAction Stop
+                Restore-MigrationBackup -BackupPath $backupDir -Confirm:$false -ErrorAction Stop
                 return & $result $false 50 $backupDir "Failed and rolled back: $_"
             } catch {
                 return & $result $false 60 $backupDir "Failed; AUTO-ROLLBACK ALSO FAILED. See ROLLBACK.txt in $backupDir. Error: $_"

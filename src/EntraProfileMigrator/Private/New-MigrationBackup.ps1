@@ -58,6 +58,8 @@
         $manifest | ConvertTo-Json | Set-Content -Path (Join-Path $backupDir 'manifest.json')
 
         # 4. Human rollback steps
+        # icacls /save stores paths relative to the profile's PARENT, so /restore runs there.
+        $srcParent = Split-Path -Parent $SourcePath
         @"
 ROLLBACK for migration $stamp on $($env:COMPUTERNAME)
 =====================================================
@@ -66,8 +68,8 @@ If the migration failed and left the system inconsistent:
 1. Restore the ProfileList registry key:
      reg import "$regOut"
 
-2. Restore the source-profile NTFS ACLs:
-     icacls "$SourcePath" /restore "$aclOut" /C /Q
+2. Restore the source-profile NTFS ACLs (run against the PARENT folder):
+     icacls "$srcParent" /restore "$aclOut" /C /L /Q
 
 3. If a copy was made, the original at "$SourcePath" was left intact (copy mode only).
 

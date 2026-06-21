@@ -7,7 +7,7 @@
     .OUTPUTS
         PSCustomObject per profile with:
           Sid, Account, ProfileImagePath, Classification, IsLoaded, LastUseTime, RawState
-        Classification in: Domain | AzureAD | Local | System | Unknown
+        Classification in: Domain | AzureAD | Local | System
     #>
     [CmdletBinding()]
     param()
@@ -42,16 +42,21 @@
             $account = $null
         }
 
-        # Classify.
+        # Classify. ORDER MATTERS: Entra (cloud) identities use the S-1-12-1 authority, which
+        # is NOT S-1-5-21. They must be detected BEFORE any "non-user authority => System"
+        # fallback, or every Entra migration *target* gets misread as a System profile and the
+        # tool can never find it. (Domain/local users are S-1-5-21; well-known are S-1-5-18/19/20.)
         $classification =
-            if     ($wellKnownSystem -contains $sid -or $sid -notmatch '^S-1-5-21-') { 'System' }
-            elseif ($account -match '^AzureAD\\')                                    { 'AzureAD' }
-            elseif ($account -and $account -match '\\')                              {
-                        # Domain vs local: local accounts resolve to <MACHINE>\name.
-                        if ($account -match "^$($env:COMPUTERNAME)\\") { 'Local' } else { 'Domain' }
+            if     ($wellKnownSystem -contains $sid)                            { 'System' }
+            elseif ($sid -match '^S-1-12-1-' -or $account -match '^AzureAD\\')  { 'AzureAD' }
+            elseif ($sid -match '^S-1-5-21-') {
+                        # Domain vs local: local accounts resolve to <MACHINE>\name; an
+                        # unresolved S-1-5-21 is almost always the now-departed source domain.
+                        if     ($account -match "^$([regex]::Escape($env:COMPUTERNAME))\\") { 'Local' }
+                        elseif ($account)                                                  { 'Domain' }
+                        else                                                               { 'Domain' }
                     }
-            elseif (-not $account)                                                   { 'Domain' } # unresolved => likely the now-departed domain
-            else                                                                     { 'Unknown' }
+            else                                                               { 'System' }
 
         # Is the hive currently loaded (user logged on)? Loaded user hives appear under HKU\<SID>.
         $isLoaded = Test-Path "Registry::HKEY_USERS\$sid"

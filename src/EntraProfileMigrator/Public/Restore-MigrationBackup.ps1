@@ -85,8 +85,12 @@
     # --- 3. Restore filesystem ACLs ---
     $aclFile = Join-Path $BackupPath 'fs-acl.txt'
     if (Test-Path -LiteralPath $aclFile) {
+        # icacls /save stores paths relative to the profile folder's PARENT, so /restore must
+        # run against that parent (e.g. C:\Users), NOT the profile folder itself — otherwise it
+        # matches nothing and the original ACLs are silently never restored.
+        $restoreRoot = Split-Path -Parent $m.sourcePath
         $p = Start-Process icacls -NoNewWindow -Wait -PassThru -ArgumentList @(
-            "`"$($m.sourcePath)`"", '/restore', "`"$aclFile`"", '/C', '/Q')
+            "`"$restoreRoot`"", '/restore', "`"$aclFile`"", '/C', '/L', '/Q')
         if ($p.ExitCode -ne 0) {
             Write-MigrationLog "icacls /restore returned $($p.ExitCode)" -Level WARN
         } else {
